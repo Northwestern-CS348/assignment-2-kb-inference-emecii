@@ -128,6 +128,64 @@ class KnowledgeBase(object):
         printv("Retracting {!r}", 0, verbose, [fact_or_rule])
         ####################################################
         # Student code goes here
+        #self.my_retract(fact_or_rule)
+        if isinstance(fact_or_rule, Fact):
+            self.my_retract(fact_or_rule)
+
+    def my_retract(self, fact_or_rule):
+        # Remove the retracted Fact / Rule if valid
+        if isinstance(fact_or_rule, Rule):
+            if fact_or_rule in self.rules:
+                ForR = self.rules[self.rules.index(fact_or_rule)]
+                if len(ForR.supported_by) == 0:
+                    if ForR.asserted:
+                        return
+                    else:
+                        if ForR in self.rules:
+                            self.facts.remove(ForR)
+                else:
+                    return
+            else:
+                return
+        elif isinstance(fact_or_rule, Fact):
+            if fact_or_rule in self.facts:
+                ForR = self.facts[self.facts.index(fact_or_rule)]
+                if len(ForR.supported_by) == 0:
+                    if ForR in self.facts:
+                            self.facts.remove(ForR)
+                else:
+                    return
+            else:
+                return
+
+        # Adjusting
+        ToRetract = []
+
+        for RF in ForR.supports_facts:
+            deletelist = []
+            for index in range(0, len(RF.supported_by)):
+                if ForR in RF.supported_by[index]:
+                    deletelist.append(index)
+            if len(deletelist):
+                for index in deletelist:
+                    RF.supported_by.remove(RF.supported_by[index])
+            if len(RF.supported_by) == 0:
+                ToRetract.append(RF)
+
+        for RF in ForR.supports_rules:
+            deletelist = []
+            for index in range(0, len(RF.supported_by)):
+                if ForR in RF.supported_by[index]:
+                    deletelist.append(index)
+            if len(deletelist):
+                for index in deletelist:
+                    RF.supported_by.remove(RF.supported_by[index])
+            if len(RF.supported_by) == 0:
+                ToRetract.append(RF)
+
+        for FR in ToRetract:
+            self.kb_retract(FR)
+
         
 
 class InferenceEngine(object):
@@ -146,3 +204,41 @@ class InferenceEngine(object):
             [fact.statement, rule.lhs, rule.rhs])
         ####################################################
         # Student code goes here
+
+        # check if the rule has bindins with the fact.
+        bindings = match(rule.lhs[0], fact.statement)
+
+        if bindings:
+            if(len(rule.lhs) == 1):
+                newFact = Fact(instantiate(rule.rhs, bindings), [[fact,rule]])
+                newFact.asserted = False
+                fact.supports_facts.append(newFact)
+                rule.supports_facts.append(newFact)
+                kb.kb_add(newFact)
+            else:
+                newRulebody = []
+                newRulebody.append([instantiate(statement, bindings) for statement in rule.lhs[1:]])
+                newRulebody.append(instantiate(rule.rhs, bindings))
+                newRule = Rule(newRulebody, [[fact,rule]])
+                newRule.asserted = False
+                fact.supports_rules.append(newRule)
+                rule.supports_rules.append(newRule)
+                kb.kb_add(newRule)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
